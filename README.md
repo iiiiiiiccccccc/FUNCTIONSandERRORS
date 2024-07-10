@@ -61,8 +61,8 @@ Once the code is compiled, you can deploy the contract by clicking on the "Deplo
 Once the contract is deployed, you can interact with it by calling the functions provided in the contract. For example, you can deposit ether, withdraw ether, check the owner, and trigger a revert condition.
 
 # Authors
-Metacrafter Chris
-@metacraftersio
+Metacrafter Student Ivanne Cres Yabut \
+https://x.com/ivanne_cres
 
 # License
 This project is licensed under the MIT License - see the LICENSE.md file for details.
