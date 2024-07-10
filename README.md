@@ -1,4 +1,4 @@
-# Error Handling Demo 
+# Smart Contract
 This Solidity program demonstrates various error handling mechanisms in Solidity, such as using require(), assert(), and revert(). The purpose of this program is to serve as an example for understanding how to handle errors and conditions in smart contracts.
 
 # Description
@@ -10,55 +10,116 @@ To run this program, you can use Remix, an online Solidity IDE. To get started, 
 
 Once you are on the Remix website, create a new file by clicking on the "+" icon in the left-hand sidebar. Save the file with a .sol extension (e.g., ErrorHandlingDemo.sol). Copy and paste the following code into the file:
 
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.26;
 
-    contract ErrorHandlingDemo {
-        address public user; // Variable to store the address of the contract owner
-        uint256 public balance; // Variable to store the contract's balance
-    
-        // Constructor sets the contract deployer as the owner
-        constructor() {
-            user = msg.sender; // msg.sender is the address that deploys the contract
-        }
-    
-        // Function to deposit ether into the contract
-        function deposit() public payable {
-            // Check that the deposit amount is greater than zero
-            require(msg.value > 0, "Deposit amount must be greater than zero");
-            balance += msg.value; // Increase the contract balance by the deposited amount
-        }
-    
-        // Function to withdraw ether from the contract
-        function withdraw(uint256 amount) public {
-            // Ensure the requested amount is not more than the contract balance
-            require(amount <= balance, "Insufficient balance");
-            // Ensure only the contract owner can withdraw
-            require(msg.sender == user, "Only the owner can withdraw");
-            payable(msg.sender).transfer(amount); // Transfer the amount to the sender
-            balance -= amount; // Decrease the contract balance by the withdrawn amount
-        }
-    
-        // Function to demonstrate assert()
-        function checkOwner() public view {
-            // Assert that the caller is the contract owner
-            assert(user == msg.sender);
-        }
-    
-        // Function to demonstrate revert()
-        function triggerRevert() public view {
-            // Revert if the caller is not the contract owner
-            if (msg.sender != user) {
-                revert("Caller is not the owner");
-            }
+contract Crowdfunding {
+    address public projectBeneficiary; 
+    // Address of the beneficiary who will receive funds if the campaign succeeds
+
+    uint256 public totalRaised; 
+    // Total amount of funds raised so far
+
+    uint256 public goalAmount; 
+    // Target amount of funds to be raised
+
+    uint256 public campaignDeadline; 
+    // Timestamp when the campaign ends
+
+    bool public campaignOpen; 
+    // Flag indicating if the campaign is still open
+
+    mapping(address => uint256) public pledges; 
+    // Mapping of addresses to pledged amounts
+
+    event PledgeReceived(address contributor, uint256 amount); 
+    // Event emitted when a pledge is received
+
+    event CampaignFinalized(address beneficiary, uint256 totalAmountRaised); 
+    // Event emitted when the campaign is finalized
+
+    // Constructor to initialize the contract with beneficiary, goal amount, and campaign duration
+    constructor(address _projectBeneficiary, uint256 _goalAmount, uint256 _campaignDurationInMinutes) {
+        require(_projectBeneficiary != address(0), "Beneficiary address cannot be zero.");
+        require(_goalAmount > 0, "Funding goal must be greater than zero.");
+        require(_campaignDurationInMinutes > 0, "Duration must be greater than zero.");
+
+        projectBeneficiary = _projectBeneficiary;
+        goalAmount = _goalAmount;
+        campaignDeadline = block.timestamp + (_campaignDurationInMinutes * 1 minutes); 
+        // Set campaign deadline
+
+        campaignOpen = true; 
+        // Initialize campaign as open
+    }
+
+    // Function for contributors to make a pledge (send funds)
+    function pledge() external payable {
+        require(campaignOpen, "Campaign is closed.");
+        require(block.timestamp <= campaignDeadline, "Campaign deadline has passed.");
+        require(msg.value > 0, "Pledge must be greater than zero.");
+
+        pledges[msg.sender] += msg.value; 
+        // Record the pledge amount from the sender
+
+        totalRaised += msg.value; 
+        // Update the total amount raised
+
+        emit PledgeReceived(msg.sender, msg.value); // Emit an event indicating a pledge was received
+    }
+
+    // Function to check if the funding goal has been met
+    function checkGoalMet() public view returns (bool) {
+        return totalRaised >= goalAmount;
+    }
+
+    // Function to finalize the campaign after the deadline
+    function finalizeCampaign() external {
+        require(block.timestamp >= campaignDeadline, "Campaign is still running.");
+        require(campaignOpen, "Campaign has already ended.");
+
+        campaignOpen = false; // Close the campaign
+
+        if (totalRaised >= goalAmount) {
+            // Transfer funds to the beneficiary if the goal is met
+            bool success = false;
+            (success, ) = projectBeneficiary.call{value: totalRaised}("");
+            assert(success); 
+            // Ensure transfer was successful
+            emit CampaignFinalized(projectBeneficiary, totalRaised); 
+            // Emit event for campaign finalization
+        } else {
+            revert("Funding goal not reached, pledges can be withdrawn by contributors.");
         }
     }
 
-To compile the code, click on the "Solidity Compiler" tab in the left-hand sidebar. Make sure the "Compiler" option is set to "0.8.0" (or another compatible version), and then click on the "Compile ErrorHandlingDemo.sol" button.
+    // Function for contributors to withdraw their pledge if the campaign failed
+    function withdrawPledge() external {
+        require(!campaignOpen, "Campaign is still open.");
+        require(totalRaised < goalAmount, "Funding goal was reached, cannot withdraw.");
 
-Once the code is compiled, you can deploy the contract by clicking on the "Deploy & Run Transactions" tab in the left-hand sidebar. Select the ErrorHandlingDemo contract from the dropdown menu, and then click on the "Deploy" button.
+        uint256 pledgedAmount = pledges[msg.sender]; // Get the amount pledged by the sender
+        require(pledgedAmount > 0, "No pledges to withdraw.");
 
-Once the contract is deployed, you can interact with it by calling the functions provided in the contract. For example, you can deposit ether, withdraw ether, check the owner, and trigger a revert condition.
+        pledges[msg.sender] = 0; // Clear the sender's pledge amount
+        bool success = false;
+        (success, ) = payable(msg.sender).call{value: pledgedAmount}(""); // Transfer funds back to the sender
+        require(success, "Withdrawal failed."); // Ensure withdrawal was successful
+    }
+}
+
+        }
+    }
+
+To compile the code, click on the "Solidity Compiler" tab in the left-hand sidebar. Make sure the "Compiler" option is set to "0.8.26" (or another compatible version), and then click on the "FUNCTIONS-AND-ERRORS.sol" button.
+
+Once the code is compiled, you can deploy the contract by clicking on the "Deploy & Run Transactions" tab in the left-hand sidebar. Select the contract from the dropdown menu, and then click on the "Deploy" button.
+
+Once the contract is deployed, you can interact with it by calling the functions provided in the contract. 
+
+The contract allows users to participate in a crowdfunding campaign by pledging funds using the pledge function. After the campaign deadline, the finalizeCampaign function is used to conclude the campaign, ensuring funds are distributed to the beneficiary if the goal is met; otherwise, contributors can withdraw their pledges using withdrawPledge. Other functions include campaignDeadline to check when the campaign ends, checkGoalMet to verify if the funding goal is reached, campaignOpen to check the campaign status, goalAmount to track the targeted fundraising goal, pledges to monitor individual contributions, projectBeneficiary to identify the recipient of funds, and totalRaised to track the total amount contributed throughout the campaign.
+
+
 
 # Authors
 Metacrafter Student Ivanne Cres Yabut \
