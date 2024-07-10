@@ -118,6 +118,9 @@ Once the code is compiled, you can deploy the contract by clicking on the "Deplo
 
 Once the contract is deployed, you can interact with it by calling the functions provided in the contract. 
 
+To deploy the contract, go to the "Deploy & Run Transactions" tab on the left sidebar. Select "VinceCrowdfunding" from the contract options, then click "Deploy". You'll need to enter three things: the beneficiary's address (_projectBeneficiary), the fundraising goal (_goalAmount), and how long the campaign will run in minutes (_campaignDurationInMinutes).
+
+* INTERACTING WITH THE CONTRACT
 The contract allows users to participate in a crowdfunding campaign by pledging funds using the pledge function. After the campaign deadline, the finalizeCampaign function is used to conclude the campaign, ensuring funds are distributed to the beneficiary if the goal is met; otherwise, contributors can withdraw their pledges using withdrawPledge. Other functions include campaignDeadline to check when the campaign ends, checkGoalMet to verify if the funding goal is reached, campaignOpen to check the campaign status, goalAmount to track the targeted fundraising goal, pledges to monitor individual contributions, projectBeneficiary to identify the recipient of funds, and totalRaised to track the total amount contributed throughout the campaign.
 
 
